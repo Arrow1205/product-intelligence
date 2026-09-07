@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogBody, DialogFooter, DialogClose } from '@/
 import { EmptyState } from '@/components/ui/empty-state'
 import { cn } from '@/lib/utils/cn'
 import type { BenchmarkEntry, Json } from '@/lib/types/database'
-import { BarChart2, Sparkles, Trash2, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import { BarChart2, Sparkles, Trash2, ExternalLink, ChevronDown, ChevronUp, Check, X, Plus } from 'lucide-react'
 
 interface Props {
   projectId: string
@@ -23,6 +23,12 @@ interface AiAnalysis {
   weaknesses?: string[]
   differentiators?: string[]
   opportunities?: string[]
+}
+
+interface Recommendation {
+  name: string
+  url: string
+  reason: string
 }
 
 function parseAnalysis(raw: Json | null): AiAnalysis | null {
@@ -40,6 +46,9 @@ export function BenchmarkView({ projectId, initialEntries, projectName, projectD
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [analyzingId, setAnalyzingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([])
+  const [recLoading, setRecLoading] = useState(false)
+  const [recError, setRecError] = useState('')
 
   const supabase = getSupabaseClient()
 
@@ -86,6 +95,41 @@ export function BenchmarkView({ projectId, initialEntries, projectName, projectD
     }
   }
 
+  const handleGetRecommendations = async () => {
+    setRecLoading(true); setRecError(''); setRecommendations([])
+    const res = await fetch('/api/ai/benchmark-recommendations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ projectId }),
+    })
+    const data = await res.json()
+    setRecLoading(false)
+    if (data.error) { setRecError(data.error); return }
+    setRecommendations(data.recommendations ?? [])
+  }
+
+  const handleApprove = async (rec: Recommendation) => {
+    const { data } = await supabase.from('benchmark_entries').insert({
+      project_id: projectId,
+      name: rec.name,
+      url: rec.url || null,
+      notes: rec.reason || null,
+    }).select().single()
+    if (data) {
+      setEntries(prev => [data, ...prev])
+      setRecommendations(prev => prev.filter(r => r.name !== rec.name))
+    }
+  }
+
+  const handleReject = async (rec: Recommendation) => {
+    await supabase.from('benchmark_rejected').insert({
+      project_id: projectId,
+      competitor_name: rec.name,
+      competitor_url: rec.url || null,
+    })
+    setRecommendations(prev => prev.filter(r => r.name !== rec.name))
+  }
+
   return (
     <div className="p-6">
       <PageHeader
@@ -93,6 +137,49 @@ export function BenchmarkView({ projectId, initialEntries, projectName, projectD
         description="Analysez vos concurrents avec l'aide de l'IA"
         action={<Button onClick={() => setOpen(true)}>Ajouter un concurrent</Button>}
       />
+
+      {/* AI Recommendations section */}
+      <div className="mb-6 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-4">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[13px] font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-[var(--accent-primary)]" /> Recommandations IA
+          </p>
+          <Button variant="secondary" size="sm" onClick={handleGetRecommendations} loading={recLoading}>
+            Obtenir 5 recommandations
+          </Button>
+        </div>
+        {recError && <p className="text-[12px] text-[var(--danger)]">{recError}</p>}
+        {recommendations.length > 0 && (
+          <div className="space-y-2">
+            {recommendations.map((rec, i) => (
+              <div key={i} className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3 flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-[13px] font-medium text-[var(--text-primary)]">{rec.name}</p>
+                    {rec.url && (
+                      <a href={rec.url} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--accent-primary)] transition-colors">
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                  {rec.reason && <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">{rec.reason}</p>}
+                </div>
+                <div className="flex gap-1.5 shrink-0">
+                  <Button size="sm" variant="primary" onClick={() => handleApprove(rec)}>
+                    <Check className="h-3 w-3" /> Approuver
+                  </Button>
+                  <Button size="sm" variant="danger" onClick={() => handleReject(rec)}>
+                    <X className="h-3 w-3" /> Rejeter
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {recommendations.length === 0 && !recLoading && !recError && (
+          <p className="text-[12px] text-[var(--text-muted)]">Cliquez sur "Obtenir 5 recommandations" pour que l'IA suggère des concurrents pertinents à analyser.</p>
+        )}
+      </div>
 
       {entries.length === 0 ? (
         <EmptyState

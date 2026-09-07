@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogBody, DialogFooter, DialogClose } from '@/
 import { EmptyState } from '@/components/ui/empty-state'
 import { cn } from '@/lib/utils/cn'
 import type { Persona } from '@/lib/types/database'
-import { UserCircle, Trash2, Upload } from 'lucide-react'
+import { UserCircle, Trash2, Upload, FlaskConical } from 'lucide-react'
 
 interface Props {
   projectId: string
@@ -45,6 +45,27 @@ export function PersonasView({ projectId, initialPersonas }: Props) {
   const [form, setForm] = useState(defaultForm)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  // Test dialog state
+  const [testPersona, setTestPersona] = useState<Persona | null>(null)
+  const defaultTest = { title: '', test_type: 'interview', objectives: '', notes: '' }
+  const [testForm, setTestForm] = useState(defaultTest)
+  const [testSaving, setTestSaving] = useState(false)
+
+  const handleCreateTest = async () => {
+    if (!testPersona || !testForm.title.trim()) return
+    setTestSaving(true)
+    await supabase.from('user_tests').insert({
+      project_id: projectId,
+      title: testForm.title.trim(),
+      test_type: testForm.test_type,
+      objectives: testForm.objectives || null,
+      notes: testForm.notes || null,
+    })
+    setTestSaving(false)
+    setTestPersona(null)
+    setTestForm(defaultTest)
+  }
 
   // Import dialog state
   const [importOpen, setImportOpen] = useState(false)
@@ -242,6 +263,11 @@ export function PersonasView({ projectId, initialPersonas }: Props) {
                   <p className="text-[13px] text-[var(--text-secondary)] line-clamp-2">{persona.frustrations}</p>
                 </div>
               )}
+              <div className="mt-2 pt-2 border-t border-[var(--border-subtle)]">
+                <Button size="sm" variant="secondary" onClick={() => { setTestPersona(persona); setTestForm(defaultTest) }} className="w-full gap-1.5">
+                  <FlaskConical className="h-3.5 w-3.5" /> Créer un test
+                </Button>
+              </div>
             </div>
           ))}
         </div>
@@ -392,6 +418,62 @@ export function PersonasView({ projectId, initialPersonas }: Props) {
                 </Button>
               </>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Test creation dialog */}
+      <Dialog open={!!testPersona} onOpenChange={v => { if (!v) { setTestPersona(null); setTestForm(defaultTest) } }}>
+        <DialogContent title={`Créer un test — ${testPersona?.name ?? ''}`} size="lg">
+          <DialogBody className="space-y-4">
+            <div>
+              <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">Titre du test *</label>
+              <input
+                className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-[13px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
+                placeholder="Ex: Test d'utilisabilité onboarding"
+                value={testForm.title}
+                onChange={e => setTestForm(f => ({ ...f, title: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">Type de test</label>
+              <select
+                className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-[13px] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
+                value={testForm.test_type}
+                onChange={e => setTestForm(f => ({ ...f, test_type: e.target.value }))}
+              >
+                <option value="interview">Interview</option>
+                <option value="usability">Test d&apos;utilisabilité</option>
+                <option value="survey">Sondage</option>
+                <option value="ab_test">A/B Test</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">Objectifs</label>
+              <textarea
+                className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-[13px] text-[var(--text-primary)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
+                rows={3}
+                placeholder="Quels apprentissages souhaitez-vous obtenir ?"
+                value={testForm.objectives}
+                onChange={e => setTestForm(f => ({ ...f, objectives: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">Notes</label>
+              <textarea
+                className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-[13px] text-[var(--text-primary)] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]"
+                rows={2}
+                value={testForm.notes}
+                onChange={e => setTestForm(f => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="ghost">Annuler</Button>
+            </DialogClose>
+            <Button onClick={handleCreateTest} disabled={!testForm.title.trim() || testSaving}>
+              {testSaving ? 'Enregistrement...' : 'Créer le test'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
