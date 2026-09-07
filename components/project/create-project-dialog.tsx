@@ -82,31 +82,31 @@ export function CreateProjectDialog({ open, onOpenChange, onCreated }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) resetAndClose() }}>
-      <DialogContent title="New Project" description={step === 1 ? 'Basic information' : 'Context & objectives'} size="md">
+      <DialogContent title="Nouveau projet" description={step === 1 ? 'Informations de base' : 'Contexte & objectifs'} size="md">
         <DialogBody className="space-y-4">
           {step === 1 ? (
             <>
               <div>
-                <Label required>Project name</Label>
-                <Input placeholder="e.g. My SaaS App" value={form.name} onChange={set('name')} error={errors.name} autoFocus />
+                <Label required>Nom du projet</Label>
+                <Input placeholder="ex. Mon App SaaS" value={form.name} onChange={set('name')} error={errors.name} autoFocus />
                 <FieldError message={errors.name} />
               </div>
               <div>
-                <Label>Website / Product URL</Label>
-                <Input placeholder="https://yourproduct.com" value={form.url} onChange={set('url')} type="url" />
+                <Label>URL du site / produit</Label>
+                <Input placeholder="https://monproduit.com" value={form.url} onChange={set('url')} type="url" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Product type</Label>
+                  <Label>Type de produit</Label>
                   <Select value={form.product_type} onChange={set('product_type')}>
-                    <option value="">Select…</option>
+                    <option value="">Sélectionner…</option>
                     {PRODUCT_TYPES.map((t) => <option key={t}>{t}</option>)}
                   </Select>
                 </div>
                 <div>
-                  <Label>Business model</Label>
+                  <Label>Modèle économique</Label>
                   <Select value={form.business_model} onChange={set('business_model')}>
-                    <option value="">Select…</option>
+                    <option value="">Sélectionner…</option>
                     {BUSINESS_MODELS.map((t) => <option key={t}>{t}</option>)}
                   </Select>
                 </div>
@@ -114,7 +114,7 @@ export function CreateProjectDialog({ open, onOpenChange, onCreated }: Props) {
               <div>
                 <Label>Description</Label>
                 <Textarea
-                  placeholder="What does the product do? Who is it for?"
+                  placeholder="À quoi sert le produit ? Pour qui ?"
                   rows={3}
                   value={form.description}
                   onChange={set('description')}
@@ -124,18 +124,18 @@ export function CreateProjectDialog({ open, onOpenChange, onCreated }: Props) {
           ) : (
             <>
               <div>
-                <Label>Main objective</Label>
+                <Label>Objectif principal</Label>
                 <Textarea
-                  placeholder="What is the primary goal for this project right now? (e.g. Improve activation rate, reduce churn)"
+                  placeholder="Quel est l'objectif prioritaire de ce projet ? (ex. Améliorer le taux d'activation, réduire le churn)"
                   rows={3}
                   value={form.main_objective}
                   onChange={set('main_objective')}
                 />
               </div>
               <div>
-                <Label>Assumed target users</Label>
+                <Label>Utilisateurs cibles supposés</Label>
                 <Textarea
-                  placeholder="Who are your users? What do you know about them? (You will refine this with Personas later)"
+                  placeholder="Qui sont vos utilisateurs ? Que savez-vous d'eux ? (Vous affinerez cela avec les Personas)"
                   rows={3}
                   value={form.assumed_target_users}
                   onChange={set('assumed_target_users')}
@@ -152,17 +152,17 @@ export function CreateProjectDialog({ open, onOpenChange, onCreated }: Props) {
           {step === 1 ? (
             <>
               <DialogClose asChild>
-                <Button variant="ghost" size="md">Cancel</Button>
+                <Button variant="ghost" size="md">Annuler</Button>
               </DialogClose>
               <Button variant="primary" size="md" onClick={handleNext}>
-                Continue
+                Continuer
               </Button>
             </>
           ) : (
             <>
-              <Button variant="ghost" size="md" onClick={() => setStep(1)}>Back</Button>
+              <Button variant="ghost" size="md" onClick={() => setStep(1)}>Retour</Button>
               <Button variant="primary" size="md" loading={loading} onClick={handleSubmit}>
-                Create project
+                Créer le projet
               </Button>
             </>
           )}

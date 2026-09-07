@@ -72,7 +72,7 @@ export function ProjectDashboard({ project, kpis, integrations }: Props) {
               what: 'Pain Points are user problems that have been identified from real data or research.',
               why: 'They are the foundation for prioritizing what to fix or improve.',
             }}
-            empty="No Pain Points identified yet"
+            empty="Aucun Pain Point identifié"
           />
           <IntelligenceModule
             icon={Lightbulb}
@@ -112,7 +112,7 @@ export function ProjectDashboard({ project, kpis, integrations }: Props) {
               what: 'The Growth Backlog contains ideas and initiatives scored manually with BRASS.',
               why: 'It ensures you prioritize the most attractive growth levers.',
             }}
-            empty="Growth Backlog is empty"
+            empty="Growth Backlog vide"
           />
           <IntelligenceModule
             icon={FlaskConical}
@@ -122,7 +122,7 @@ export function ProjectDashboard({ project, kpis, integrations }: Props) {
               what: 'Experiments are structured tests run to validate hypotheses from your Insights and Opportunities.',
               why: 'They close the loop between discovery and delivery.',
             }}
-            empty="No Experiments running"
+            empty="Aucune expérimentation en cours"
           />
         </div>
       </section>
@@ -181,8 +181,8 @@ function NorthStarEmpty() {
       <EmptyState
         compact
         icon={BarChart2}
-        title="No North Star Metric defined"
-        description="Define the single metric that best captures the value your product delivers."
+        title="North Star Metric non définie"
+        description="Définissez la métrique unique qui reflète le mieux la valeur délivrée par votre produit."
       />
     </Card>
   )
@@ -215,11 +215,11 @@ function IntelligenceModule({
 
 function IntegrationRow({ integration }: { integration: ProjectIntegration }) {
   const statusConfig = {
-    connected: { icon: CheckCircle2, color: 'text-[var(--success)]', label: 'Connected' },
-    error: { icon: AlertCircle, color: 'text-[var(--danger)]', label: 'Error' },
-    pending: { icon: Clock, color: 'text-[var(--text-muted)]', label: 'Pending' },
-    syncing: { icon: Clock, color: 'text-[var(--info)]', label: 'Syncing' },
-    disconnected: { icon: AlertCircle, color: 'text-[var(--text-muted)]', label: 'Disconnected' },
+    connected: { icon: CheckCircle2, color: 'text-[var(--success)]', label: 'Connecté' },
+    error: { icon: AlertCircle, color: 'text-[var(--danger)]', label: 'Erreur' },
+    pending: { icon: Clock, color: 'text-[var(--text-muted)]', label: 'En attente' },
+    syncing: { icon: Clock, color: 'text-[var(--info)]', label: 'Synchronisation' },
+    disconnected: { icon: AlertCircle, color: 'text-[var(--text-muted)]', label: 'Déconnecté' },
   }[integration.status as string] ?? { icon: Clock, color: 'text-[var(--text-muted)]', label: integration.status }
 
   const StatusIcon = statusConfig.icon
@@ -250,9 +250,9 @@ function DataSourcesEmpty({ projectId }: { projectId: string }) {
       <EmptyState
         compact
         icon={Database}
-        title="No data sources connected"
-        description="Connect GA4, import CSV/XLSX, or add manual evidence to start collecting data."
-        action={{ label: 'Add data source', onClick: () => window.location.href = `/project/${projectId}/data-sources` }}
+        title="Aucune source de données connectée"
+        description="Connectez GA4, importez un CSV/XLSX ou ajoutez des données manuellement pour commencer à collecter."
+        action={{ label: 'Ajouter une source', onClick: () => window.location.href = `/project/${projectId}/data-sources` }}
       />
     </Card>
   )

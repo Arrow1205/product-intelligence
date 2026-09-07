@@ -39,18 +39,18 @@ export function ProjectList({ initialProjects, error }: Props) {
           <ThemeToggle />
           <Button variant="primary" size="md" onClick={() => setCreateOpen(true)}>
             <Plus className="h-3.5 w-3.5" />
-            New Project
+            Nouveau projet
           </Button>
         </div>
       </div>
 
       {/* Page title */}
       <div className="mb-6">
-        <h1 className="text-[22px] font-semibold tracking-tight text-[var(--text-primary)]">Projects</h1>
+        <h1 className="text-[22px] font-semibold tracking-tight text-[var(--text-primary)]">Projets</h1>
         <p className="mt-0.5 text-[13px] text-[var(--text-muted)]">
           {projects.length === 0
-            ? 'Create your first project to get started.'
-            : `${projects.length} project${projects.length > 1 ? 's' : ''}`}
+            ? 'Créez votre premier projet pour commencer.'
+            : `${projects.length} projet${projects.length > 1 ? 's' : ''}`}
         </p>
       </div>
 
@@ -58,9 +58,9 @@ export function ProjectList({ initialProjects, error }: Props) {
       {projects.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title="No projects yet"
-          description="Create a project to start centralizing your product data, research, and growth initiatives."
-          action={{ label: 'Create first project', onClick: () => setCreateOpen(true) }}
+          title="Aucun projet"
+          description="Créez un projet pour commencer à centraliser vos données produit, vos recherches et vos initiatives de croissance."
+          action={{ label: 'Créer mon premier projet', onClick: () => setCreateOpen(true) }}
         />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -76,7 +76,7 @@ export function ProjectList({ initialProjects, error }: Props) {
             className="flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] border-2 border-dashed border-[var(--border-subtle)] py-8 text-[var(--text-muted)] transition-colors hover:border-[var(--border-strong)] hover:text-[var(--text-secondary)] cursor-pointer"
           >
             <Plus className="h-5 w-5" />
-            <span className="text-[13px] font-medium">New project</span>
+            <span className="text-[13px] font-medium">Nouveau projet</span>
           </button>
         </div>
       )}

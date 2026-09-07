@@ -74,10 +74,10 @@ export function LoadingState({ rows = 3 }: { rows?: number }) {
 export function ErrorState({ message, onRetry }: { message?: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center gap-2 py-8 text-center">
-      <p className="text-[13px] text-[var(--danger)]">{message ?? 'Something went wrong.'}</p>
+      <p className="text-[13px] text-[var(--danger)]">{message ?? 'Une erreur est survenue.'}</p>
       {onRetry && (
         <Button variant="ghost" size="sm" onClick={onRetry}>
-          Retry
+          Réessayer
         </Button>
       )}
     </div>
