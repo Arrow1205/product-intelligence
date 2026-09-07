@@ -28,19 +28,19 @@ const primaryNav: NavItem[] = [
 
 const intelligenceNav: NavItem[] = [
   { label: 'Research',         href: '/research',       icon: FileText,        phase: 2, soon: true },
-  { label: 'Personas',         href: '/personas',       icon: UserCircle,      phase: 3, soon: true },
+  { label: 'Personas',         href: '/personas',       icon: UserCircle,      phase: 3 },
   { label: 'Cohorts',          href: '/cohorts',        icon: Users,           phase: 3, soon: true },
-  { label: 'Pain Points',      href: '/pain-points',    icon: AlertTriangle,   phase: 4, soon: true },
-  { label: 'Insights',         href: '/insights',       icon: Lightbulb,       phase: 4, soon: true },
+  { label: 'Pain Points',      href: '/pain-points',    icon: AlertTriangle,   phase: 4 },
+  { label: 'Insights',         href: '/insights',       icon: Lightbulb,       phase: 4 },
   { label: 'CRO',              href: '/cro',            icon: TrendingUp,      phase: 4, soon: true },
 ]
 
 const growthNav: NavItem[] = [
   { label: 'Growth Backlog',   href: '/growth-backlog', icon: BarChart3,       phase: 5, soon: true },
-  { label: 'Roadmap',          href: '/roadmap',        icon: Map,             phase: 5, soon: true },
+  { label: 'Roadmap',          href: '/roadmap',        icon: Map,             phase: 5 },
   { label: 'Opportunity Tree', href: '/opportunity-tree', icon: GitBranch,     phase: 5, soon: true },
-  { label: 'Experiments',      href: '/experiments',    icon: FlaskConical,    phase: 6, soon: true },
-  { label: 'Benchmark',        href: '/benchmark',      icon: BarChart2,       phase: 7, soon: true },
+  { label: 'Experiments',      href: '/experiments',    icon: FlaskConical,    phase: 6 },
+  { label: 'Benchmark',        href: '/benchmark',      icon: BarChart2,       phase: 7 },
 ]
 
 interface SidebarProps {

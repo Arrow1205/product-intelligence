@@ -310,6 +310,273 @@ export type Database = {
           }
         ]
       }
+      personas: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          age: number | null
+          job: string | null
+          goals: string | null
+          frustrations: string | null
+          behaviors: string | null
+          quote: string | null
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          age?: number | null
+          job?: string | null
+          goals?: string | null
+          frustrations?: string | null
+          behaviors?: string | null
+          quote?: string | null
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          age?: number | null
+          job?: string | null
+          goals?: string | null
+          frustrations?: string | null
+          behaviors?: string | null
+          quote?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'personas_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      pain_points: {
+        Row: {
+          id: string
+          project_id: string
+          title: string
+          description: string | null
+          severity: string
+          frequency: string
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          title: string
+          description?: string | null
+          severity?: string
+          frequency?: string
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string
+          description?: string | null
+          severity?: string
+          frequency?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'pain_points_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      insights: {
+        Row: {
+          id: string
+          project_id: string
+          title: string
+          description: string | null
+          type: string
+          confidence: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          title: string
+          description?: string | null
+          type?: string
+          confidence?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string
+          description?: string | null
+          type?: string
+          confidence?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'insights_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      roadmap_items: {
+        Row: {
+          id: string
+          project_id: string
+          title: string
+          description: string | null
+          type: string
+          status: string
+          brass_benefit: number | null
+          brass_revenue: number | null
+          brass_alignment: number | null
+          brass_speed: number | null
+          brass_saturation: number | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          title: string
+          description?: string | null
+          type?: string
+          status?: string
+          brass_benefit?: number | null
+          brass_revenue?: number | null
+          brass_alignment?: number | null
+          brass_speed?: number | null
+          brass_saturation?: number | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string
+          description?: string | null
+          type?: string
+          status?: string
+          brass_benefit?: number | null
+          brass_revenue?: number | null
+          brass_alignment?: number | null
+          brass_speed?: number | null
+          brass_saturation?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'roadmap_items_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      user_tests: {
+        Row: {
+          id: string
+          project_id: string
+          title: string
+          test_type: string
+          status: string
+          objectives: string | null
+          notes: string | null
+          scheduled_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          title: string
+          test_type?: string
+          status?: string
+          objectives?: string | null
+          notes?: string | null
+          scheduled_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          title?: string
+          test_type?: string
+          status?: string
+          objectives?: string | null
+          notes?: string | null
+          scheduled_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_tests_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      benchmark_entries: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          url: string | null
+          ai_analysis: Json | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          url?: string | null
+          ai_analysis?: Json | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          url?: string | null
+          ai_analysis?: Json | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'benchmark_entries_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -334,6 +601,12 @@ export type ProjectObjective = Database['public']['Tables']['project_objectives'
 export type ProjectIntegration = Database['public']['Tables']['project_integrations']['Row']
 export type IntegrationSync = Database['public']['Tables']['integration_syncs']['Row']
 export type Evidence = Database['public']['Tables']['evidence']['Row']
+export type Persona = Database['public']['Tables']['personas']['Row']
+export type PainPoint = Database['public']['Tables']['pain_points']['Row']
+export type Insight = Database['public']['Tables']['insights']['Row']
+export type RoadmapItem = Database['public']['Tables']['roadmap_items']['Row']
+export type UserTest = Database['public']['Tables']['user_tests']['Row']
+export type BenchmarkEntry = Database['public']['Tables']['benchmark_entries']['Row']
 
 export type NorthStarMetric = {
   label: string
