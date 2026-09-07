@@ -41,7 +41,7 @@ const growthNav: NavItem[] = [
   { label: 'Growth Backlog',   href: '/growth-backlog', icon: BarChart3,       phase: 5 },
   { label: 'Roadmap',          href: '/roadmap',        icon: Map,             phase: 5 },
   { label: 'Opportunity Tree', href: '/opportunity-tree', icon: GitBranch,     phase: 5, soon: true },
-  { label: 'Experiments',      href: '/experiments',    icon: FlaskConical,    phase: 6 },
+  { label: 'User Tests',       href: '/user-tests',     icon: FlaskConical,    phase: 6 },
   { label: 'Benchmark',        href: '/benchmark',      icon: BarChart2,       phase: 7 },
 ]
 

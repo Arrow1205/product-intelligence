@@ -505,6 +505,10 @@ export type Database = {
           objectives: string | null
           notes: string | null
           scheduled_at: string | null
+          form_fields: Json
+          persona_ids: string[]
+          synthetic_personas: Json
+          ai_analysis: Json | null
           created_at: string
           updated_at: string
         }
@@ -517,6 +521,10 @@ export type Database = {
           objectives?: string | null
           notes?: string | null
           scheduled_at?: string | null
+          form_fields?: Json
+          persona_ids?: string[]
+          synthetic_personas?: Json
+          ai_analysis?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -527,6 +535,10 @@ export type Database = {
           objectives?: string | null
           notes?: string | null
           scheduled_at?: string | null
+          form_fields?: Json
+          persona_ids?: string[]
+          synthetic_personas?: Json
+          ai_analysis?: Json | null
           updated_at?: string
         }
         Relationships: [
@@ -535,6 +547,40 @@ export type Database = {
             columns: ['project_id']
             isOneToOne: false
             referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      test_responses: {
+        Row: {
+          id: string
+          test_id: string
+          persona_name: string
+          persona_type: string
+          persona_id: string | null
+          answers: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          test_id: string
+          persona_name: string
+          persona_type?: string
+          persona_id?: string | null
+          answers?: Json
+          created_at?: string
+        }
+        Update: {
+          persona_name?: string
+          persona_type?: string
+          answers?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'test_responses_test_id_fkey'
+            columns: ['test_id']
+            isOneToOne: false
+            referencedRelation: 'user_tests'
             referencedColumns: ['id']
           }
         ]
@@ -702,6 +748,9 @@ export type PainPoint = Database['public']['Tables']['pain_points']['Row']
 export type Insight = Database['public']['Tables']['insights']['Row']
 export type RoadmapItem = Database['public']['Tables']['roadmap_items']['Row']
 export type UserTest = Database['public']['Tables']['user_tests']['Row']
+export type TestResponse = Database['public']['Tables']['test_responses']['Row']
+export type FormField = { id: string; type: 'text' | 'textarea' | 'radio' | 'checkbox'; label: string; required: boolean; options?: string[] }
+export type SyntheticPersona = { name: string; age: number; job: string; skills: Record<string, number>; profile: string }
 export type BenchmarkEntry = Database['public']['Tables']['benchmark_entries']['Row']
 export type ProjectDocument = Database['public']['Tables']['project_documents']['Row']
 export type BenchmarkRejected = Database['public']['Tables']['benchmark_rejected']['Row']
