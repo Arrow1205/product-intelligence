@@ -539,6 +539,102 @@ export type Database = {
           }
         ]
       }
+      project_documents: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          file_url: string | null
+          content: string | null
+          file_type: string | null
+          ai_processed: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          file_url?: string | null
+          content?: string | null
+          file_type?: string | null
+          ai_processed?: boolean
+          created_at?: string
+        }
+        Update: {
+          name?: string
+          file_url?: string | null
+          content?: string | null
+          file_type?: string | null
+          ai_processed?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'project_documents_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      benchmark_rejected: {
+        Row: {
+          id: string
+          project_id: string
+          competitor_name: string
+          competitor_url: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          competitor_name: string
+          competitor_url?: string | null
+          created_at?: string
+        }
+        Update: {
+          competitor_name?: string
+          competitor_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'benchmark_rejected_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      ai_conversations: {
+        Row: {
+          id: string
+          project_id: string
+          question: string
+          answer: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          question: string
+          answer: string
+          created_at?: string
+        }
+        Update: {
+          question?: string
+          answer?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ai_conversations_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       benchmark_entries: {
         Row: {
           id: string
@@ -607,6 +703,9 @@ export type Insight = Database['public']['Tables']['insights']['Row']
 export type RoadmapItem = Database['public']['Tables']['roadmap_items']['Row']
 export type UserTest = Database['public']['Tables']['user_tests']['Row']
 export type BenchmarkEntry = Database['public']['Tables']['benchmark_entries']['Row']
+export type ProjectDocument = Database['public']['Tables']['project_documents']['Row']
+export type BenchmarkRejected = Database['public']['Tables']['benchmark_rejected']['Row']
+export type AiConversation = Database['public']['Tables']['ai_conversations']['Row']
 
 export type NorthStarMetric = {
   label: string

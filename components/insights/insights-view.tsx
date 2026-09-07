@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogBody, DialogFooter, DialogClose } from '@/
 import { EmptyState } from '@/components/ui/empty-state'
 import { cn } from '@/lib/utils/cn'
 import type { Insight } from '@/lib/types/database'
-import { Lightbulb, Trash2 } from 'lucide-react'
+import { Lightbulb, Trash2, Sparkles, Plus, X } from 'lucide-react'
 
 interface Props {
   projectId: string
@@ -44,14 +44,42 @@ const confidenceLabel: Record<string, string> = {
 
 const defaultForm = { title: '', description: '', type: 'observation', confidence: 'low' }
 
+type AiSuggestion = { title: string; description: string; type: string; confidence: string }
+
 export function InsightsView({ projectId, initialInsights }: Props) {
   const [items, setItems] = useState<Insight[]>(initialInsights)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(defaultForm)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([])
+  const [aiError, setAiError] = useState('')
 
   const supabase = getSupabaseClient()
+
+  const handleAiSuggest = async () => {
+    setAiLoading(true); setAiError(''); setAiSuggestions([])
+    const res = await fetch('/api/ai/insights', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId }) })
+    const data = await res.json()
+    setAiLoading(false)
+    if (data.error) { setAiError(data.error); return }
+    setAiSuggestions(data.suggestions ?? [])
+  }
+
+  const handleAddSuggestion = async (s: AiSuggestion) => {
+    const { data } = await supabase.from('insights').insert({
+      project_id: projectId,
+      title: s.title,
+      description: s.description || null,
+      type: s.type || 'observation',
+      confidence: s.confidence || 'low',
+    }).select().single()
+    if (data) {
+      setItems(prev => [data, ...prev])
+      setAiSuggestions(prev => prev.filter(x => x.title !== s.title))
+    }
+  }
 
   const handleCreate = async () => {
     if (!form.title.trim()) return
@@ -83,8 +111,46 @@ export function InsightsView({ projectId, initialInsights }: Props) {
       <PageHeader
         title="Insights"
         description="Capitalisez sur les apprentissages issus de votre recherche"
-        action={<Button onClick={() => setOpen(true)}>Ajouter un Insight</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button variant="secondary" size="md" onClick={handleAiSuggest} loading={aiLoading}>
+              <Sparkles className="h-3.5 w-3.5" /> Suggestions IA
+            </Button>
+            <Button variant="primary" size="md" onClick={() => setOpen(true)}>
+              <Plus className="h-3.5 w-3.5" /> Ajouter
+            </Button>
+          </div>
+        }
       />
+
+      {(aiSuggestions.length > 0 || aiError) && (
+        <div className="mb-4 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[13px] font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-[var(--accent-primary)]" /> Suggestions IA
+            </p>
+            <button onClick={() => setAiSuggestions([])} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {aiError && <p className="text-[12px] text-[var(--danger)]">{aiError}</p>}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {aiSuggestions.map((s, i) => (
+              <div key={i} className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3 flex flex-col gap-2">
+                <p className="text-[13px] font-medium text-[var(--text-primary)]">{s.title}</p>
+                {s.description && <p className="text-[12px] text-[var(--text-secondary)] line-clamp-2">{s.description}</p>}
+                <div className="flex items-center gap-1.5">
+                  <Badge variant={typeVariant[s.type] ?? 'default'}>{typeLabel[s.type] ?? s.type}</Badge>
+                  <Badge variant={confidenceVariant[s.confidence] ?? 'muted'}>{confidenceLabel[s.confidence] ?? s.confidence}</Badge>
+                </div>
+                <Button size="sm" onClick={() => handleAddSuggestion(s)} className="mt-auto">
+                  <Plus className="h-3 w-3" /> Ajouter
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {items.length === 0 ? (
         <EmptyState

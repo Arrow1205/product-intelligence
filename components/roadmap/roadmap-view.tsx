@@ -7,12 +7,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogBody, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils/cn'
-import type { RoadmapItem } from '@/lib/types/database'
-import { Map, Trash2 } from 'lucide-react'
+import type { RoadmapItem, Insight } from '@/lib/types/database'
+import { Map, Trash2, Sparkles, Plus, X } from 'lucide-react'
 
 interface Props {
   projectId: string
   initialItems: RoadmapItem[]
+  initialInsights?: Insight[]
 }
 
 const COLUMNS: { key: string; label: string }[] = [
@@ -38,14 +39,42 @@ function brassScore(item: RoadmapItem): number | null {
   return vals.reduce<number>((acc, v) => acc + (v ?? 0), 0)
 }
 
-export function RoadmapView({ projectId, initialItems }: Props) {
+type AiSuggestion = { title: string; description: string }
+
+export function RoadmapView({ projectId, initialItems, initialInsights = [] }: Props) {
   const [items, setItems] = useState<RoadmapItem[]>(initialItems)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(defaultForm)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiSuggestions, setAiSuggestions] = useState<AiSuggestion[]>([])
+  const [aiError, setAiError] = useState('')
 
   const supabase = getSupabaseClient()
+
+  const handleAiSuggest = async () => {
+    setAiLoading(true); setAiError(''); setAiSuggestions([])
+    const res = await fetch('/api/ai/roadmap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectId }) })
+    const data = await res.json()
+    setAiLoading(false)
+    if (data.error) { setAiError(data.error); return }
+    setAiSuggestions(data.suggestions ?? [])
+  }
+
+  const handleAddSuggestion = async (s: AiSuggestion) => {
+    const { data } = await supabase.from('roadmap_items').insert({
+      project_id: projectId,
+      title: s.title,
+      description: s.description || null,
+      type: 'suggested',
+      status: 'backlog',
+    }).select().single()
+    if (data) {
+      setItems(prev => [data, ...prev])
+      setAiSuggestions(prev => prev.filter(x => x.title !== s.title))
+    }
+  }
 
   const handleCreate = async () => {
     if (!form.title.trim()) return
@@ -55,6 +84,7 @@ export function RoadmapView({ projectId, initialItems }: Props) {
       title: form.title.trim(),
       description: form.description || null,
       status: form.status,
+      type: 'manual',
       brass_benefit: form.brass_benefit ? parseInt(form.brass_benefit) : null,
       brass_revenue: form.brass_revenue ? parseInt(form.brass_revenue) : null,
       brass_alignment: form.brass_alignment ? parseInt(form.brass_alignment) : null,
@@ -90,8 +120,43 @@ export function RoadmapView({ projectId, initialItems }: Props) {
       <PageHeader
         title="Roadmap"
         description="Planifiez et priorisez les fonctionnalités avec le score BRASS"
-        action={<Button onClick={() => setOpen(true)}>Ajouter un item</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button variant="secondary" size="md" onClick={handleAiSuggest} loading={aiLoading}>
+              <Sparkles className="h-3.5 w-3.5" /> Suggestions IA
+            </Button>
+            <Button variant="primary" size="md" onClick={() => setOpen(true)}>
+              <Plus className="h-3.5 w-3.5" /> Ajouter un item
+            </Button>
+          </div>
+        }
       />
+
+      {(aiSuggestions.length > 0 || aiError) && (
+        <div className="mb-4 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[13px] font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-[var(--accent-primary)]" /> Suggestions IA — Roadmap
+            </p>
+            <button onClick={() => setAiSuggestions([])} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <p className="text-[11px] text-[var(--text-muted)] mb-3">Ces suggestions seront ajoutées en Backlog avec le type "IA". Les scores BRASS restent à compléter manuellement.</p>
+          {aiError && <p className="text-[12px] text-[var(--danger)]">{aiError}</p>}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {aiSuggestions.map((s, i) => (
+              <div key={i} className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-primary)] p-3 flex flex-col gap-2">
+                <p className="text-[13px] font-medium text-[var(--text-primary)]">{s.title}</p>
+                {s.description && <p className="text-[12px] text-[var(--text-secondary)] line-clamp-2">{s.description}</p>}
+                <Button size="sm" onClick={() => handleAddSuggestion(s)} className="mt-auto">
+                  <Plus className="h-3 w-3" /> Ajouter à la Roadmap
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-4 gap-4">
         {COLUMNS.map(col => {
@@ -109,6 +174,7 @@ export function RoadmapView({ projectId, initialItems }: Props) {
               ) : (
                 colItems.map(item => {
                   const score = brassScore(item)
+                  const isAi = item.type === 'suggested'
                   return (
                     <div
                       key={item.id}
@@ -131,7 +197,12 @@ export function RoadmapView({ projectId, initialItems }: Props) {
                       {item.description && (
                         <p className="text-[12px] text-[var(--text-muted)] line-clamp-2">{item.description}</p>
                       )}
-                      <div className="flex items-center gap-1 mt-0.5">
+                      <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                        {isAi && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-[var(--radius-sm)] bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                            <Sparkles className="h-2.5 w-2.5" /> IA
+                          </span>
+                        )}
                         <span className="text-[11px] text-[var(--text-muted)]">BRASS:</span>
                         <span className="text-[11px] font-semibold text-[var(--text-secondary)]">
                           {score !== null ? score : '—'}
@@ -167,6 +238,19 @@ export function RoadmapView({ projectId, initialItems }: Props) {
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               />
             </div>
+            {initialInsights.length > 0 && (
+              <div>
+                <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">Insights liés (sélection libre)</label>
+                <div className="max-h-32 overflow-y-auto space-y-1 rounded-[var(--radius-md)] border border-[var(--border-subtle)] p-2">
+                  {initialInsights.map(insight => (
+                    <label key={insight.id} className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)] cursor-pointer hover:text-[var(--text-primary)] py-0.5">
+                      <input type="checkbox" className="rounded" />
+                      <span>{insight.title}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">Colonne</label>
               <select
