@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, BarChart2, Database, Users, UserCircle, AlertTriangle,
   FileText, Lightbulb, TrendingUp, Map, GitBranch, FlaskConical,
-  BarChart3, Sparkles, Settings, ChevronLeft, ChevronRight, FolderOpen, ChevronDown, Plus,
+  BarChart3, Sparkles, Settings, ChevronLeft, ChevronRight, FolderOpen, ChevronDown, Plus, LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { Tooltip } from '@/components/ui/tooltip'
@@ -198,6 +198,7 @@ export function Sidebar({ projectId, projectName }: SidebarProps) {
           collapsed={collapsed}
           active={isActive('/settings')}
         />
+        <LogoutButton collapsed={collapsed} />
       </div>
 
       {/* Collapse toggle */}
@@ -216,6 +217,33 @@ export function Sidebar({ projectId, projectName }: SidebarProps) {
       </button>
     </aside>
   )
+}
+
+function LogoutButton({ collapsed }: { collapsed: boolean }) {
+  const handleLogout = async () => {
+    const supabase = getSupabaseClient()
+    await supabase.auth.signOut()
+    window.location.href = '/login'
+  }
+
+  const btn = (
+    <button
+      onClick={handleLogout}
+      className={cn(
+        'flex items-center gap-2.5 rounded-[var(--radius-md)] transition-colors w-full',
+        collapsed ? 'h-8 w-8 justify-center' : 'h-8 px-2',
+        'text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--danger)]',
+      )}
+    >
+      <LogOut className="h-4 w-4 shrink-0" />
+      {!collapsed && <span className="text-[13px] font-medium">Déconnexion</span>}
+    </button>
+  )
+
+  if (collapsed) {
+    return <Tooltip content="Déconnexion" side="right">{btn}</Tooltip>
+  }
+  return btn
 }
 
 function Divider() {
