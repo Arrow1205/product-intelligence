@@ -7,7 +7,7 @@ import type { ProjectIntegration } from '@/lib/types/database'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip'
-import { supabase } from '@/lib/supabase/client'
+import { getSupabaseClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/cn'
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -40,7 +40,7 @@ export function IntegrationCard({ integration, onUpdate, onDelete }: Props) {
 
   const handleDelete = async () => {
     if (!confirm(`Disconnect "${integration.connection_name}"? Imported historical data will be preserved.`)) return
-    await supabase.from('project_integrations').delete().eq('id', integration.id)
+    await getSupabaseClient().from('project_integrations').delete().eq('id', integration.id)
     onDelete(integration.id)
   }
 

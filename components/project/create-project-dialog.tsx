@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Dialog, DialogContent, DialogBody, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input, Textarea, Select, Label, FieldError } from '@/components/ui/input'
-import { supabase } from '@/lib/supabase/client'
+import { getSupabaseClient } from '@/lib/supabase/client'
 import type { Project } from '@/lib/types/database'
 
 interface Props {
@@ -49,7 +49,7 @@ export function CreateProjectDialog({ open, onOpenChange, onCreated }: Props) {
 
   const handleSubmit = async () => {
     setLoading(true)
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('projects')
       .insert({
         user_id: POC_USER_ID,

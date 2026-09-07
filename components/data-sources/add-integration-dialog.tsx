@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogBody, DialogFooter, DialogClose } from '@/
 import { Button } from '@/components/ui/button'
 import { Input, Select, Label, FieldError } from '@/components/ui/input'
 import { HelpTooltip } from '@/components/ui/tooltip'
-import { supabase } from '@/lib/supabase/client'
+import { getSupabaseClient } from '@/lib/supabase/client'
 import type { ProjectIntegration, IntegrationProvider } from '@/lib/types/database'
 import { cn } from '@/lib/utils/cn'
 
@@ -92,7 +92,7 @@ export function AddIntegrationDialog({ open, onOpenChange, projectId, onAdded }:
     if (Object.keys(errs).length > 0) return
 
     setLoading(true)
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
       .from('project_integrations')
       .insert({
         project_id: projectId,
