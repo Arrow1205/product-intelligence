@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { getSupabaseClient } from '@/lib/supabase/client'
 import { PageHeader } from '@/components/ui/page-header'
 import { Badge } from '@/components/ui/badge'
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogBody, DialogFooter, DialogClose } from '@/
 import { EmptyState } from '@/components/ui/empty-state'
 import { cn } from '@/lib/utils/cn'
 import type { Persona } from '@/lib/types/database'
-import { UserCircle, Trash2 } from 'lucide-react'
+import { UserCircle, Trash2, Upload } from 'lucide-react'
 
 interface Props {
   projectId: string
@@ -26,12 +26,33 @@ const defaultForm = {
   quote: '',
 }
 
+const EXAMPLE_JSON = `[
+  {
+    "name": "Marie Dupont",
+    "age": 34,
+    "job": "Responsable Marketing",
+    "goals": "Gagner du temps sur les tâches répétitives",
+    "frustrations": "Trop d'outils différents à gérer",
+    "behaviors": "Consulte ses emails dès le matin",
+    "quote": "Je veux un outil qui s'adapte à moi, pas l'inverse.",
+    "status": "draft"
+  }
+]`
+
 export function PersonasView({ projectId, initialPersonas }: Props) {
   const [personas, setPersonas] = useState<Persona[]>(initialPersonas)
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(defaultForm)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  // Import dialog state
+  const [importOpen, setImportOpen] = useState(false)
+  const [importJson, setImportJson] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ success: number; skipped: number } | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const supabase = getSupabaseClient()
 
@@ -63,13 +84,103 @@ export function PersonasView({ projectId, initialPersonas }: Props) {
     setDeletingId(null)
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      setImportJson(ev.target?.result as string ?? '')
+    }
+    reader.readAsText(file)
+  }
+
+  const handleImport = async () => {
+    setImportError(null)
+    setImportResult(null)
+
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(importJson)
+    } catch {
+      setImportError('JSON invalide. Vérifiez la syntaxe.')
+      return
+    }
+
+    if (!Array.isArray(parsed)) {
+      setImportError('Le JSON doit être un tableau (array) d\'objets.')
+      return
+    }
+
+    setImporting(true)
+    let success = 0
+    let skipped = 0
+
+    for (const item of parsed) {
+      if (
+        typeof item !== 'object' ||
+        item === null ||
+        typeof (item as Record<string, unknown>).name !== 'string' ||
+        !(item as Record<string, unknown>).name
+      ) {
+        skipped++
+        continue
+      }
+
+      const obj = item as Record<string, unknown>
+      const { error } = await supabase.from('personas').insert({
+        project_id: projectId,
+        name: String(obj.name).trim(),
+        age: obj.age != null ? parseInt(String(obj.age)) || null : null,
+        job: obj.job ? String(obj.job) : null,
+        goals: obj.goals ? String(obj.goals) : null,
+        frustrations: obj.frustrations ? String(obj.frustrations) : null,
+        behaviors: obj.behaviors ? String(obj.behaviors) : null,
+        quote: obj.quote ? String(obj.quote) : null,
+        status: obj.status === 'validated' ? 'validated' : 'draft',
+      })
+
+      if (error) {
+        skipped++
+      } else {
+        success++
+      }
+    }
+
+    setImporting(false)
+    setImportResult({ success, skipped })
+
+    if (success > 0) {
+      // Refresh personas list
+      const { data } = await supabase
+        .from('personas')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false })
+      if (data) setPersonas(data)
+    }
+  }
+
+  const handleImportClose = () => {
+    setImportOpen(false)
+    setImportJson('')
+    setImportResult(null)
+    setImportError(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   return (
     <div className="p-6">
       <PageHeader
         title="Personas"
         description="Définissez les profils utilisateurs de votre produit"
         action={
-          <Button onClick={() => setOpen(true)}>Créer un persona</Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-1.5" />
+              Importer JSON
+            </Button>
+            <Button onClick={() => setOpen(true)}>Créer un persona</Button>
+          </div>
         }
       />
 
@@ -136,6 +247,7 @@ export function PersonasView({ projectId, initialPersonas }: Props) {
         </div>
       )}
 
+      {/* Create dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent title="Créer un persona" size="lg">
           <DialogBody className="space-y-4">
@@ -199,6 +311,87 @@ export function PersonasView({ projectId, initialPersonas }: Props) {
             <Button onClick={handleCreate} disabled={!form.name.trim() || saving}>
               {saving ? 'Enregistrement...' : 'Créer'}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import dialog */}
+      <Dialog open={importOpen} onOpenChange={handleImportClose}>
+        <DialogContent title="Importer des personas (JSON)" size="lg">
+          <DialogBody className="space-y-4">
+            {importResult ? (
+              <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] p-4 text-[13px] text-[var(--text-primary)]">
+                {importResult.skipped === 0 ? (
+                  <p className="text-[var(--success)]">
+                    {importResult.success} persona{importResult.success > 1 ? 's' : ''} importé{importResult.success > 1 ? 's' : ''} avec succès.
+                  </p>
+                ) : (
+                  <p>
+                    <span className="text-[var(--success)]">{importResult.success} importé{importResult.success > 1 ? 's' : ''}</span>
+                    {' · '}
+                    <span className="text-[var(--text-muted)]">{importResult.skipped} ignoré{importResult.skipped > 1 ? 's' : ''} (champ &ldquo;name&rdquo; manquant ou erreur)</span>
+                  </p>
+                )}
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">
+                    Fichier JSON
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleFileChange}
+                    className="w-full text-[13px] text-[var(--text-primary)] file:mr-3 file:py-1.5 file:px-3 file:rounded-[var(--radius-sm)] file:border-0 file:text-[12px] file:font-medium file:bg-[var(--surface-secondary)] file:text-[var(--text-secondary)] hover:file:bg-[var(--surface-hover)] cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">
+                    Ou collez votre JSON ici
+                  </label>
+                  <textarea
+                    className="w-full rounded-[var(--radius-md)] border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-[12px] font-mono text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)] resize-none"
+                    rows={8}
+                    value={importJson}
+                    onChange={e => setImportJson(e.target.value)}
+                    placeholder={EXAMPLE_JSON}
+                  />
+                </div>
+
+                {importError && (
+                  <p className="text-[12px] text-[var(--danger)]">{importError}</p>
+                )}
+
+                <details className="text-[12px] text-[var(--text-muted)]">
+                  <summary className="cursor-pointer hover:text-[var(--text-secondary)] transition-colors">
+                    Voir le format attendu
+                  </summary>
+                  <pre className="mt-2 rounded-[var(--radius-sm)] bg-[var(--surface-secondary)] p-3 text-[11px] overflow-auto max-h-40">
+                    {EXAMPLE_JSON}
+                  </pre>
+                </details>
+              </>
+            )}
+          </DialogBody>
+          <DialogFooter>
+            {importResult ? (
+              <Button onClick={handleImportClose}>Fermer</Button>
+            ) : (
+              <>
+                <DialogClose asChild>
+                  <Button variant="ghost">Annuler</Button>
+                </DialogClose>
+                <Button
+                  onClick={handleImport}
+                  disabled={!importJson.trim() || importing}
+                >
+                  {importing ? 'Importation...' : 'Importer'}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
