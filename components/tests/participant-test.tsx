@@ -1,149 +1,321 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { CheckCircle } from 'lucide-react'
+import { useState } from 'react'
+import { Star, Check } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
 interface Block {
   id: string
   block_type: string
   position: number
-  config: Record<string, unknown> | null
+  config: Record<string, unknown>
 }
 
 interface TestData {
   id: string
   title: string
-  intro_text: string | null
-  closing_text: string | null
-  estimated_minutes: number | null
+  intro_text?: string | null
+  closing_text?: string | null
+  estimated_minutes?: number | null
+  public_token: string
   blocks: Block[]
 }
 
-type Step = 'welcome' | 'consent' | 'blocks' | 'thanks'
+interface Props { test: TestData }
 
-interface Props { publicToken: string }
-
-export function ParticipantTest({ publicToken }: Props) {
-  const [test, setTest] = useState<TestData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [step, setStep] = useState<Step>('welcome')
-  const [blockIndex, setBlockIndex] = useState(0)
-  const [answers, setAnswers] = useState<Record<string, unknown>>({})
+export function ParticipantTest({ test }: Props) {
+  const [step, setStep] = useState<'welcome' | 'consent' | 'blocks' | 'done'>('welcome')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [answers, setAnswers] = useState<Record<string, unknown>>({})
+  const [blockIdx, setBlockIdx] = useState(0)
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetch(`/api/public-tests/${publicToken}`)
-      .then(r => r.json())
-      .then(d => { if (d.error) { setError(d.error) } else { setTest(d.test) } })
-      .catch(() => setError('Erreur de chargement'))
-      .finally(() => setLoading(false))
-  }, [publicToken])
+  const activeBlocks = test.blocks ?? []
 
-  const handleSubmit = async () => {
-    if (!test) return
-    setSubmitting(true)
-    await fetch(`/api/public-tests/${publicToken}/responses`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        participantName: name || null,
-        participantEmail: email || null,
-        responses: Object.entries(answers).map(([blockId, answer]) => ({ blockId, answer })),
-      }),
-    })
-    setSubmitting(false)
-    setStep('thanks')
+  const setAnswer = (blockId: string, value: unknown) => {
+    setAnswers(prev => ({ ...prev, [blockId]: value }))
   }
 
-  const inputCls = 'w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-blue-500'
+  const handleSubmit = async () => {
+    setSubmitting(true)
+    setError(null)
+    try {
+      const responses = Object.entries(answers).map(([blockId, value]) => ({ blockId, answer: { value } }))
+      const res = await fetch(`/api/public-tests/${test.public_token}/responses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantName: name || null, participantEmail: email || null, responses }),
+      })
+      if (!res.ok) throw new Error('Erreur lors de l\'envoi')
+      setStep('done')
+    } catch (err) {
+      setError(String(err))
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Chargement...</p></div>
-  if (error) return <div className="min-h-screen flex items-center justify-center"><p className="text-red-500">{error}</p></div>
-  if (!test) return null
+  const inputCls = 'w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]'
+
+  // ── WELCOME ───────────────────────────────────────────────────────────────
+  if (step === 'welcome') {
+    return (
+      <div className="min-h-screen bg-[var(--surface-secondary)] flex items-center justify-center p-4">
+        <div className="w-full max-w-lg bg-[var(--surface-primary)] rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)]">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{test.title}</h1>
+          {test.estimated_minutes && (
+            <p className="text-sm text-[var(--text-muted)] mb-4">Durée estimée : {test.estimated_minutes} min</p>
+          )}
+          {test.intro_text ? (
+            <p className="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">{test.intro_text}</p>
+          ) : (
+            <p className="text-sm text-[var(--text-secondary)] mb-6">Merci de participer à cette étude. Vos réponses nous aideront à améliorer notre produit.</p>
+          )}
+          <p className="text-xs text-[var(--text-muted)] mb-6">Ce test comporte {activeBlocks.filter(b => b.block_type !== 'instructions').length} question{activeBlocks.filter(b => b.block_type !== 'instructions').length > 1 ? 's' : ''}.</p>
+          <button onClick={() => setStep('consent')} className="w-full py-3 rounded-[var(--radius-md)] bg-[var(--accent-primary)] text-white font-medium hover:opacity-90 transition-opacity">
+            Commencer
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── CONSENT ───────────────────────────────────────────────────────────────
+  if (step === 'consent') {
+    return (
+      <div className="min-h-screen bg-[var(--surface-secondary)] flex items-center justify-center p-4">
+        <div className="w-full max-w-lg bg-[var(--surface-primary)] rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)]">
+          <h2 className="text-lg font-bold text-[var(--text-primary)] mb-1">Vos informations</h2>
+          <p className="text-sm text-[var(--text-muted)] mb-6">Ces informations sont optionnelles et restent confidentielles.</p>
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Prénom (optionnel)</label>
+              <input className={inputCls} value={name} onChange={e => setName(e.target.value)} placeholder="Votre prénom" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Email (optionnel)</label>
+              <input className={inputCls} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="votre@email.com" />
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => setStep('welcome')} className="flex-1 py-2.5 rounded-[var(--radius-md)] border border-[var(--border-subtle)] text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] transition-colors">
+              Retour
+            </button>
+            <button onClick={() => setStep('blocks')} className="flex-1 py-2.5 rounded-[var(--radius-md)] bg-[var(--accent-primary)] text-white font-medium hover:opacity-90 transition-opacity">
+              Continuer
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── DONE ─────────────────────────────────────────────────────────────────
+  if (step === 'done') {
+    return (
+      <div className="min-h-screen bg-[var(--surface-secondary)] flex items-center justify-center p-4">
+        <div className="w-full max-w-lg bg-[var(--surface-primary)] rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)] text-center">
+          <div className="w-12 h-12 rounded-full bg-[var(--success)]/20 flex items-center justify-center mx-auto mb-4">
+            <Check className="h-6 w-6 text-[var(--success)]" />
+          </div>
+          <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Merci !</h2>
+          <p className="text-sm text-[var(--text-secondary)]">
+            {test.closing_text ?? 'Vos réponses ont bien été enregistrées. Merci pour votre participation !'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── BLOCKS ────────────────────────────────────────────────────────────────
+  const currentBlock = activeBlocks[blockIdx]
+  if (!currentBlock) return null
+
+  const isLast = blockIdx === activeBlocks.length - 1
+  const cfg = (currentBlock.config ?? {}) as Record<string, unknown>
+
+  const goNext = () => {
+    if (isLast) handleSubmit()
+    else setBlockIdx(i => i + 1)
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        {step === 'welcome' && (
-          <div className="space-y-4 text-center">
-            <h1 className="text-2xl font-bold text-gray-900">{test.title}</h1>
-            {test.intro_text && <p className="text-gray-600 text-sm">{test.intro_text}</p>}
-            {test.estimated_minutes && <p className="text-gray-400 text-xs">Durée estimée: {test.estimated_minutes} minutes</p>}
-            <button onClick={() => setStep('consent')} className="w-full py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors">Commencer</button>
+    <div className="min-h-screen bg-[var(--surface-secondary)] flex items-center justify-center p-4">
+      <div className="w-full max-w-lg">
+        {/* Progress bar */}
+        <div className="mb-4">
+          <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1">
+            <span>{blockIdx + 1} / {activeBlocks.length}</span>
           </div>
-        )}
-
-        {step === 'consent' && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">Informations (optionnel)</h2>
-            <div><label className="block text-xs font-medium text-gray-500 mb-1">Prénom</label><input className={inputCls} placeholder="Votre prénom" value={name} onChange={e => setName(e.target.value)} /></div>
-            <div><label className="block text-xs font-medium text-gray-500 mb-1">Email</label><input type="email" className={inputCls} placeholder="votre@email.com" value={email} onChange={e => setEmail(e.target.value)} /></div>
-            <p className="text-xs text-gray-400">Vos réponses sont anonymisées et utilisées uniquement à des fins de recherche.</p>
-            <div className="flex gap-2">
-              <button onClick={() => setStep('welcome')} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Retour</button>
-              <button onClick={() => setStep('blocks')} className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">Continuer</button>
-            </div>
+          <div className="h-1.5 rounded-full bg-[var(--surface-primary)] overflow-hidden">
+            <div className="h-full rounded-full bg-[var(--accent-primary)] transition-all" style={{ width: `${((blockIdx + 1) / activeBlocks.length) * 100}%` }} />
           </div>
-        )}
+        </div>
 
-        {step === 'blocks' && test.blocks.length > 0 && (() => {
-          const block = test.blocks[blockIndex]
-          const cfg = block.config ?? {}
-          return (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-gray-400">
-                <span>Question {blockIndex + 1} / {test.blocks.length}</span>
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900">{(cfg.title as string) ?? block.block_type}</h2>
-              {(cfg.instructions as string) && <p className="text-sm text-gray-600">{cfg.instructions as string}</p>}
-              {(block.block_type === 'open_text' || block.block_type === 'question') && (
-                <textarea
-                  className={cn(inputCls, 'resize-none h-28')}
-                  placeholder="Votre réponse..."
-                  value={(answers[block.id] as string) ?? ''}
-                  onChange={e => setAnswers(prev => ({ ...prev, [block.id]: e.target.value }))}
-                />
-              )}
-              {block.block_type === 'rating' && (
-                <div className="flex gap-2 justify-center">
-                  {[1,2,3,4,5].map(n => (
-                    <button key={n} onClick={() => setAnswers(prev => ({ ...prev, [block.id]: n }))}
-                      className={cn('h-10 w-10 rounded-full border-2 text-sm font-medium transition-colors', answers[block.id] === n ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-200 hover:border-blue-300')}
-                    >{n}</button>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2 pt-2">
-                {blockIndex > 0 && <button onClick={() => setBlockIndex(i => i - 1)} className="flex-1 py-2 rounded-lg border border-gray-200 text-sm hover:bg-gray-50">Précédent</button>}
-                {blockIndex < test.blocks.length - 1 ? (
-                  <button onClick={() => setBlockIndex(i => i + 1)} className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Suivant</button>
-                ) : (
-                  <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50">{submitting ? 'Envoi...' : 'Terminer'}</button>
-                )}
-              </div>
-            </div>
-          )
-        })()}
+        <div className="bg-[var(--surface-primary)] rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)]">
+          <BlockInput
+            block={currentBlock}
+            cfg={cfg}
+            value={answers[currentBlock.id]}
+            onChange={v => setAnswer(currentBlock.id, v)}
+          />
 
-        {step === 'blocks' && test.blocks.length === 0 && (
-          <div className="text-center space-y-4">
-            <p className="text-gray-500 text-sm">Ce test n&apos;a pas encore de questions.</p>
-            <button onClick={handleSubmit} disabled={submitting} className="w-full py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">{submitting ? 'Envoi...' : 'Terminer'}</button>
+          {error && <p className="mt-3 text-sm text-[var(--danger)]">{error}</p>}
+
+          <div className="flex gap-3 mt-6">
+            {blockIdx > 0 && (
+              <button onClick={() => setBlockIdx(i => i - 1)} className="px-4 py-2.5 rounded-[var(--radius-md)] border border-[var(--border-subtle)] text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] transition-colors">
+                Précédent
+              </button>
+            )}
+            <button
+              onClick={goNext}
+              disabled={submitting}
+              className="flex-1 py-2.5 rounded-[var(--radius-md)] bg-[var(--accent-primary)] text-white font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+            >
+              {submitting ? 'Envoi...' : isLast ? 'Terminer' : 'Suivant'}
+            </button>
           </div>
-        )}
-
-        {step === 'thanks' && (
-          <div className="text-center space-y-4">
-            <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
-            <h2 className="text-xl font-bold text-gray-900">Merci !</h2>
-            <p className="text-gray-600 text-sm">{test.closing_text ?? 'Vos réponses ont bien été enregistrées.'}</p>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   )
+}
+
+// ─── Block input renderer ─────────────────────────────────────────────────
+
+function BlockInput({ block, cfg, value, onChange }: {
+  block: Block
+  cfg: Record<string, unknown>
+  value: unknown
+  onChange: (v: unknown) => void
+}) {
+  const inputCls = 'w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]'
+
+  if (block.block_type === 'instructions') {
+    return <p className="text-sm text-[var(--text-primary)] leading-relaxed">{(cfg.text as string) || ''}</p>
+  }
+
+  const question = (cfg.question as string) || ''
+
+  if (block.block_type === 'open_text') {
+    return (
+      <div>
+        <p className="text-base font-medium text-[var(--text-primary)] mb-3">{question}</p>
+        <input
+          className={inputCls}
+          value={(value as string) ?? ''}
+          onChange={e => onChange(e.target.value)}
+          placeholder={(cfg.placeholder as string) || 'Votre réponse...'}
+        />
+      </div>
+    )
+  }
+
+  if (block.block_type === 'textarea') {
+    return (
+      <div>
+        <p className="text-base font-medium text-[var(--text-primary)] mb-3">{question}</p>
+        <textarea
+          className={cn(inputCls, 'resize-none')}
+          rows={4}
+          value={(value as string) ?? ''}
+          onChange={e => onChange(e.target.value)}
+          placeholder={(cfg.placeholder as string) || 'Votre réponse...'}
+        />
+      </div>
+    )
+  }
+
+  if (block.block_type === 'single_choice') {
+    const options = (cfg.options as string[]) ?? []
+    return (
+      <div>
+        <p className="text-base font-medium text-[var(--text-primary)] mb-3">{question}</p>
+        <div className="space-y-2">
+          {options.map(opt => (
+            <button key={opt} onClick={() => onChange(opt)}
+              className={cn('w-full text-left px-4 py-3 rounded-[var(--radius-md)] border text-sm transition-colors',
+                value === opt ? 'border-[var(--accent-primary)] bg-[var(--accent-muted)] text-[var(--accent-primary)] font-medium' : 'border-[var(--border-subtle)] text-[var(--text-primary)] hover:border-[var(--accent-primary)]/50')}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (block.block_type === 'multi_choice') {
+    const options = (cfg.options as string[]) ?? []
+    const selected = (value as string[]) ?? []
+    const toggle = (opt: string) => {
+      const next = selected.includes(opt) ? selected.filter(s => s !== opt) : [...selected, opt]
+      onChange(next)
+    }
+    return (
+      <div>
+        <p className="text-base font-medium text-[var(--text-primary)] mb-3">{question}</p>
+        <div className="space-y-2">
+          {options.map(opt => (
+            <button key={opt} onClick={() => toggle(opt)}
+              className={cn('w-full text-left px-4 py-3 rounded-[var(--radius-md)] border text-sm transition-colors flex items-center gap-3',
+                selected.includes(opt) ? 'border-[var(--accent-primary)] bg-[var(--accent-muted)]' : 'border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50')}
+            >
+              <div className={cn('w-4 h-4 rounded-[var(--radius-sm)] border-2 flex items-center justify-center shrink-0',
+                selected.includes(opt) ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]' : 'border-[var(--border-subtle)]')}>
+                {selected.includes(opt) && <Check className="h-2.5 w-2.5 text-white" />}
+              </div>
+              <span className={selected.includes(opt) ? 'text-[var(--accent-primary)] font-medium' : 'text-[var(--text-primary)]'}>{opt}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (block.block_type === 'rating_5') {
+    const rating = (value as number) ?? 0
+    return (
+      <div>
+        <p className="text-base font-medium text-[var(--text-primary)] mb-4">{question}</p>
+        <div className="flex gap-2 justify-center">
+          {[1, 2, 3, 4, 5].map(n => (
+            <button key={n} onClick={() => onChange(n)}
+              className={cn('w-12 h-12 rounded-full text-2xl transition-transform hover:scale-110', rating >= n ? 'text-yellow-400' : 'text-[var(--border-subtle)]')}
+            >
+              <Star className={cn('h-8 w-8', rating >= n ? 'fill-yellow-400 text-yellow-400' : 'text-[var(--border-strong)]')} />
+            </button>
+          ))}
+        </div>
+        {rating > 0 && <p className="text-center text-sm text-[var(--text-muted)] mt-2">{rating} / 5</p>}
+      </div>
+    )
+  }
+
+  if (block.block_type === 'rating_10') {
+    const rating = (value as number) ?? 0
+    return (
+      <div>
+        <p className="text-base font-medium text-[var(--text-primary)] mb-4">{question}</p>
+        <div className="flex gap-1.5 justify-between">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+            <button key={n} onClick={() => onChange(n)}
+              className={cn('flex-1 h-10 rounded-[var(--radius-md)] text-sm font-bold transition-colors border',
+                rating === n ? 'bg-[var(--accent-primary)] text-white border-[var(--accent-primary)]' : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-primary)]')}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-between text-xs text-[var(--text-muted)] mt-1 px-1">
+          <span>Pas du tout</span><span>Tout à fait</span>
+        </div>
+      </div>
+    )
+  }
+
+  return <p className="text-sm text-[var(--text-muted)]">Type de bloc inconnu : {block.block_type}</p>
 }
