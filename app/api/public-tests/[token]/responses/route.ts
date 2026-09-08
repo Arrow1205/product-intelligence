@@ -7,7 +7,7 @@ export async function POST(
 ) {
   try {
     const { token } = await params
-    const { participantName, participantEmail, responses } = await request.json()
+    const { participantName, participantEmail, participantJobTitle, participantAge, responses } = await request.json()
 
     const supabase = supabaseServer()
 
@@ -29,6 +29,8 @@ export async function POST(
         product_id: test.product_id,
         name: participantName ?? null,
         email: participantEmail ?? null,
+        job_title: participantJobTitle ?? null,
+        age: participantAge ?? null,
         started_at: new Date().toISOString(),
       })
       .select()

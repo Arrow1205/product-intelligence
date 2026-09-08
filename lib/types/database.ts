@@ -180,6 +180,8 @@ export interface Database {
           status: string
           public_token: string | null
           published_at: string | null
+          logo_url: string | null
+          bg_color: string | null
           created_at: string
           updated_at: string
         }
@@ -199,6 +201,8 @@ export interface Database {
           status?: string
           public_token?: string | null
           published_at?: string | null
+          logo_url?: string | null
+          bg_color?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -239,6 +243,8 @@ export interface Database {
           participant_code: string | null
           name: string | null
           email: string | null
+          job_title: string | null
+          age: number | null
           metadata: Json | null
           started_at: string | null
           completed_at: string | null
@@ -251,6 +257,8 @@ export interface Database {
           participant_code?: string | null
           name?: string | null
           email?: string | null
+          job_title?: string | null
+          age?: number | null
           metadata?: Json | null
           started_at?: string | null
           completed_at?: string | null
@@ -431,6 +439,46 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['activity_log']['Insert']>
         Relationships: []
       }
+      personas: {
+        Row: {
+          id: string
+          user_id: string
+          product_id: string
+          name: string
+          age_range: string | null
+          job_title: string | null
+          description: string | null
+          goals: string[] | null
+          frustrations: string[] | null
+          behaviors: string | null
+          quote: string | null
+          avatar_color: string | null
+          source: 'manual' | 'ai'
+          origin_test_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          product_id: string
+          name: string
+          age_range?: string | null
+          job_title?: string | null
+          description?: string | null
+          goals?: string[] | null
+          frustrations?: string[] | null
+          behaviors?: string | null
+          quote?: string | null
+          avatar_color?: string | null
+          source?: 'manual' | 'ai'
+          origin_test_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['personas']['Insert']>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -450,3 +498,4 @@ export type Insight = Database['public']['Tables']['insights']['Row']
 export type AiRecommendation = Database['public']['Tables']['ai_recommendations']['Row']
 export type Asset = Database['public']['Tables']['assets']['Row']
 export type Folder = Database['public']['Tables']['folders']['Row']
+export type Persona = Database['public']['Tables']['personas']['Row']

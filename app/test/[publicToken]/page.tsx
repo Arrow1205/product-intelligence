@@ -31,6 +31,13 @@ export default async function PublicTestPage({ params }: Props) {
     return { ...b, config: safeConfig as Record<string, unknown> }
   })
 
+  // Resolve logo to a signed URL (1 year expiry) so the client never needs storage access
+  let logoSignedUrl: string | null = null
+  if (test.logo_url) {
+    const { data: signed } = await supabase.storage.from('product-files').createSignedUrl(test.logo_url, 60 * 60 * 24 * 365)
+    logoSignedUrl = signed?.signedUrl ?? null
+  }
+
   const testData = {
     id: test.id,
     title: test.title,
@@ -38,6 +45,8 @@ export default async function PublicTestPage({ params }: Props) {
     closing_text: test.closing_text,
     estimated_minutes: test.estimated_minutes,
     public_token: publicToken,
+    logo_url: logoSignedUrl,
+    bg_color: test.bg_color ?? null,
     blocks: safeBlocks,
   }
 

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, FileText, FolderOpen, FlaskConical, AlertTriangle,
-  Lightbulb, Sparkles, Settings, ChevronLeft, ChevronRight, ChevronDown, Plus, LogOut,
+  Lightbulb, Sparkles, Settings, ChevronLeft, ChevronRight, ChevronDown, Plus, LogOut, Users, NotebookPen,
 } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { Tooltip } from '@/components/ui/tooltip'
@@ -24,6 +24,8 @@ const navItems: NavItem[] = [
   { label: 'Expression besoin', href: '/needs',        icon: FileText },
   { label: 'Documents',         href: '/files',        icon: FolderOpen },
   { label: 'Tests',             href: '/tests',        icon: FlaskConical },
+  { label: 'Personas',          href: '/personas',     icon: Users },
+  { label: 'Recueil',           href: '/research',     icon: NotebookPen },
   { label: 'Pain Points',       href: '/pain-points',  icon: AlertTriangle },
   { label: 'Insights',          href: '/insights',     icon: Lightbulb },
   { label: 'AI Analysis',       href: '/ai',           icon: Sparkles },

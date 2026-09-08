@@ -18,6 +18,8 @@ interface TestData {
   closing_text?: string | null
   estimated_minutes?: number | null
   public_token: string
+  logo_url?: string | null
+  bg_color?: string | null
   blocks: Block[]
 }
 
@@ -27,12 +29,15 @@ export function ParticipantTest({ test }: Props) {
   const [step, setStep] = useState<'welcome' | 'consent' | 'blocks' | 'done'>('welcome')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [jobTitle, setJobTitle] = useState('')
+  const [age, setAge] = useState('')
   const [answers, setAnswers] = useState<Record<string, unknown>>({})
   const [blockIdx, setBlockIdx] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const activeBlocks = test.blocks ?? []
+  const bgColor = test.bg_color ?? '#f8fafc'
 
   const setAnswer = (blockId: string, value: unknown) => {
     setAnswers(prev => ({ ...prev, [blockId]: value }))
@@ -46,7 +51,13 @@ export function ParticipantTest({ test }: Props) {
       const res = await fetch(`/api/public-tests/${test.public_token}/responses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ participantName: name || null, participantEmail: email || null, responses }),
+        body: JSON.stringify({
+          participantName: name || null,
+          participantEmail: email || null,
+          participantJobTitle: jobTitle || null,
+          participantAge: age ? parseInt(age, 10) : null,
+          responses,
+        }),
       })
       if (!res.ok) throw new Error('Erreur lors de l\'envoi')
       setStep('done')
@@ -57,13 +68,18 @@ export function ParticipantTest({ test }: Props) {
     }
   }
 
-  const inputCls = 'w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-secondary)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]'
+  const inputCls = 'w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-white px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-primary)]'
+
+  const Logo = test.logo_url ? (
+    <img src={test.logo_url} alt="Logo" className="h-10 w-auto object-contain mx-auto mb-4" onError={e => { (e.target as HTMLImageElement).style.display = 'none' }} />
+  ) : null
 
   // ── WELCOME ───────────────────────────────────────────────────────────────
   if (step === 'welcome') {
     return (
-      <div className="min-h-screen bg-[var(--surface-secondary)] flex items-center justify-center p-4">
-        <div className="w-full max-w-lg bg-[var(--surface-primary)] rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)]">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: bgColor }}>
+        <div className="w-full max-w-lg bg-white rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)]">
+          {Logo}
           <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">{test.title}</h1>
           {test.estimated_minutes && (
             <p className="text-sm text-[var(--text-muted)] mb-4">Durée estimée : {test.estimated_minutes} min</p>
@@ -85,14 +101,22 @@ export function ParticipantTest({ test }: Props) {
   // ── CONSENT ───────────────────────────────────────────────────────────────
   if (step === 'consent') {
     return (
-      <div className="min-h-screen bg-[var(--surface-secondary)] flex items-center justify-center p-4">
-        <div className="w-full max-w-lg bg-[var(--surface-primary)] rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)]">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: bgColor }}>
+        <div className="w-full max-w-lg bg-white rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)]">
           <h2 className="text-lg font-bold text-[var(--text-primary)] mb-1">Vos informations</h2>
           <p className="text-sm text-[var(--text-muted)] mb-6">Ces informations sont optionnelles et restent confidentielles.</p>
           <div className="space-y-4 mb-6">
             <div>
-              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Prénom (optionnel)</label>
-              <input className={inputCls} value={name} onChange={e => setName(e.target.value)} placeholder="Votre prénom" />
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Nom (optionnel)</label>
+              <input className={inputCls} value={name} onChange={e => setName(e.target.value)} placeholder="Votre nom" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Poste (optionnel)</label>
+              <input className={inputCls} value={jobTitle} onChange={e => setJobTitle(e.target.value)} placeholder="Votre poste ou fonction" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Âge (optionnel)</label>
+              <input className={inputCls} type="number" min="10" max="120" value={age} onChange={e => setAge(e.target.value)} placeholder="Votre âge" />
             </div>
             <div>
               <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">Email (optionnel)</label>
@@ -115,8 +139,8 @@ export function ParticipantTest({ test }: Props) {
   // ── DONE ─────────────────────────────────────────────────────────────────
   if (step === 'done') {
     return (
-      <div className="min-h-screen bg-[var(--surface-secondary)] flex items-center justify-center p-4">
-        <div className="w-full max-w-lg bg-[var(--surface-primary)] rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)] text-center">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: bgColor }}>
+        <div className="w-full max-w-lg bg-white rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)] text-center">
           <div className="w-12 h-12 rounded-full bg-[var(--success)]/20 flex items-center justify-center mx-auto mb-4">
             <Check className="h-6 w-6 text-[var(--success)]" />
           </div>
@@ -142,19 +166,20 @@ export function ParticipantTest({ test }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--surface-secondary)] flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: bgColor }}>
       <div className="w-full max-w-lg">
         {/* Progress bar */}
         <div className="mb-4">
-          <div className="flex justify-between text-xs text-[var(--text-muted)] mb-1">
+          <div className="flex justify-between text-xs mb-1" style={{ color: isLightColor(bgColor) ? '#64748b' : '#cbd5e1' }}>
             <span>{blockIdx + 1} / {activeBlocks.length}</span>
           </div>
-          <div className="h-1.5 rounded-full bg-[var(--surface-primary)] overflow-hidden">
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: isLightColor(bgColor) ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)' }}>
             <div className="h-full rounded-full bg-[var(--accent-primary)] transition-all" style={{ width: `${((blockIdx + 1) / activeBlocks.length) * 100}%` }} />
           </div>
         </div>
 
-        <div className="bg-[var(--surface-primary)] rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)]">
+        {/* Block card — always white */}
+        <div className="bg-white rounded-[var(--radius-xl)] border border-[var(--border-subtle)] p-8 shadow-[var(--shadow-lg)]">
           <BlockInput
             block={currentBlock}
             cfg={cfg}
@@ -182,6 +207,15 @@ export function ParticipantTest({ test }: Props) {
       </div>
     </div>
   )
+}
+
+function isLightColor(hex: string) {
+  try {
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return (r * 299 + g * 587 + b * 114) / 1000 > 128
+  } catch { return true }
 }
 
 // ─── Block input renderer ─────────────────────────────────────────────────
@@ -284,7 +318,7 @@ function BlockInput({ block, cfg, value, onChange }: {
         <div className="flex gap-2 justify-center">
           {[1, 2, 3, 4, 5].map(n => (
             <button key={n} onClick={() => onChange(n)}
-              className={cn('w-12 h-12 rounded-full text-2xl transition-transform hover:scale-110', rating >= n ? 'text-yellow-400' : 'text-[var(--border-subtle)]')}
+              className="w-12 h-12 rounded-full transition-transform hover:scale-110"
             >
               <Star className={cn('h-8 w-8', rating >= n ? 'fill-yellow-400 text-yellow-400' : 'text-[var(--border-strong)]')} />
             </button>
