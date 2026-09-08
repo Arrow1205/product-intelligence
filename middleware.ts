@@ -28,12 +28,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && pathname === '/login') {
-    return NextResponse.redirect(new URL('/', request.url))
+    return NextResponse.redirect(new URL('/products', request.url))
   }
 
   return supabaseResponse
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/auth).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/auth|api/public-tests|test/).*)'],
 }
